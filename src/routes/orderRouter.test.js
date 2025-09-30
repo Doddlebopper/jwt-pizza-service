@@ -71,7 +71,7 @@ describe('Order Router Tests', () => {
 
       expect(testItem).toHaveProperty('title', 'Test Pizza');
 
-      expect(testItem).toHaveProperty('description', 'A delicious test pizza');
+      expect(testItem).toHaveProperty('description', 'A test pizza');
 
       expect(testItem).toHaveProperty('image', 'test-pizza.png');
 
