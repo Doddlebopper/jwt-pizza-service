@@ -46,6 +46,13 @@ describe('Order Router Tests', () => {
       .post(`/api/franchise/${testFranchise.id}/store`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Test Store' });
+
+    await DB.addMenuItem({
+      title: 'Test Pizza',
+      description: 'A test pizza',
+      image: 'test-pizza.png',
+      price: 12.99
+    });
   });
 
   describe('GET /api/order/menu', () => {
