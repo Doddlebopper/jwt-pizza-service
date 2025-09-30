@@ -1,19 +1,72 @@
-const app = require('./service')
+const request = require('supertest');
+const app = require('./service');
 
-const testUser = {name: 'pizza diner', email: 'reg@test.com', password: 'a' };
-let testUserAuthToken;
+describe('Service Tests', () => {
+  describe('GET /', () => {
+    test('Welcome message', async () => {
+      const response = await request(app)
+        .get('/')
+        .expect(200);
 
-beforeAll(async () => {
-    testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
-    const registerRes = await request(app).post('/api/auth').send(testUser);
-    testUserAuthToken = registerRes.body.token;
-});
+      expect(response.body).toHaveProperty('message', 'welcome to JWT Pizza');
+      expect(response.body).toHaveProperty('version');
+      expect(typeof response.body.version).toBe('string');
+    });
+  });
 
-test('login', async() => {
-    const loginRes = await request(app).put('/api/auth').send(testUser);
-    expect(loginRes.status).toBe(200);
-    expect(loginRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+  describe('GET /api/docs', () => {
+    test('API documentation', async () => {
+      const response = await request(app)
+        .get('/api/docs')
+        .expect(200);
 
-    const {password, ...user} = {...testUser, roles: [{ role: 'diner' }] };
-    expect(loginRes.body.user).toMatchObject(user);
+      expect(response.body).toHaveProperty('version');
+      expect(response.body).toHaveProperty('endpoints');
+      expect(response.body).toHaveProperty('config');
+      expect(Array.isArray(response.body.endpoints)).toBe(true);
+      expect(response.body.config).toHaveProperty('factory');
+      expect(response.body.config).toHaveProperty('db');
+    });
+  });
+
+  describe('CORS Headers', () => {
+    test('CORS headers', async () => {
+      const response = await request(app)
+        .get('/')
+        .set('Origin', 'http://localhost:3000');
+
+      expect(response.headers).toHaveProperty('access-control-allow-origin');
+      expect(response.headers['access-control-allow-methods']).toContain('GET');
+      expect(response.headers['access-control-allow-methods']).toContain('POST');
+      expect(response.headers['access-control-allow-methods']).toContain('PUT');
+      expect(response.headers['access-control-allow-methods']).toContain('DELETE');
+      expect(response.headers).toHaveProperty('access-control-allow-headers');
+      expect(response.headers).toHaveProperty('access-control-allow-credentials');
+    });
+
+    test('should use wildcard origin when no origin header', async () => {
+      const response = await request(app)
+        .get('/');
+
+      expect(response.headers['access-control-allow-origin']).toBe('*');
+    });
+  });
+
+  describe('404', () => {
+    test('404 because unknown endpoint', async () => {
+      const response = await request(app)
+        .get('/unknown-endpoint')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message', 'unknown endpoint');
+    });
+
+    test('should return 404 for unknown API endpoint', async () => {
+      const response = await request(app)
+        .get('/api/unknown')
+        .expect(404);
+
+      expect(response.body).toHaveProperty('message', 'unknown endpoint');
+    });
+  });
 });

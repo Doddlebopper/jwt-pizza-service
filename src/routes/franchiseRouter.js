@@ -99,7 +99,7 @@ franchiseRouter.delete(
   asyncHandler(async (req, res) => {
     const franchiseId = Number(req.params.franchiseId);
     await DB.deleteFranchise(franchiseId);
-    res.json({ message: 'franchise deleted' });
+    res.json({ message: 'disintegrated by the beam' });
   })
 );
 
