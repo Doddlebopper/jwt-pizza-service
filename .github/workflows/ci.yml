@@ -43,10 +43,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      /*
-      - name: Run tests
-        run: npm test
-      */
+      # Temporarily skip tests to debug ECR push
+      # - name: Run tests
+      #   run: npm test
 
       - name: Update coverage
         run: |
