@@ -8,6 +8,20 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0.29
+        env:
+          MYSQL_ROOT_PASSWORD: Nicispoo1!
+          MYSQL_DATABASE: pizza
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -u root -pNicispoo1!" 
+          --health-interval 10s 
+          --health-start-period 10s 
+          --health-timeout 5s 
+          --health-retries 10
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
