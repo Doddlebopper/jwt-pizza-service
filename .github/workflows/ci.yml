@@ -42,11 +42,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download distribution artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: package
-
       - name: Lint
         run: npm run lint
 
@@ -121,8 +116,12 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: 'jwt-pizza-service'
-        run:
-          docker build --platform=linux/arm64 -t $ECR_REGISTRY/$ECR_REPOSITORY --push .
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >>  $GITHUB_OUTPUT 
+          IMAGE_TAG: ${{ steps.set_version.outputs.version }}
+        working-directory: dist
+        run: |
+          docker build --platform=linux/arm64 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT 
 
 
