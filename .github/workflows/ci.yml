@@ -103,7 +103,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           audience: sts.amazonaws.com
-          aws-region: us-east-1
+          aws-region: us-east-2
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/${{ secrets.CI_IAM_ROLE }}
 
       - name: Login to Amazon ECR
