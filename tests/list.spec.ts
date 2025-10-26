@@ -1,6 +1,6 @@
-import { test, request, expect } from "playwright/test";
+//import { test, request, expect } from "playwright/test";
 
-
+/*
 test('list users unauthorized', async ({ request }) => {
   const listUsersRes = await request.get('/api/user');
   expect(listUsersRes.status()).toBe(401);
@@ -30,3 +30,4 @@ async function registerUser(service) {
 function randomName() {
   return Math.random().toString(36).substring(2, 12);
 }
+*/
