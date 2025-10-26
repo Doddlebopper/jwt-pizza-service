@@ -123,6 +123,8 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: us-east-1
 
       - name: Set up machine emulation
         uses: docker/setup-qemu-action@v3
