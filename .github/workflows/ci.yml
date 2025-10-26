@@ -21,6 +21,38 @@ jobs:
           - '3306:3306'
         options: >-
           --health-cmd "mysqladmin ping -ptempdbpassword" --health-interval 10s --health-start-period 10s --health-timeout 5s --health-retries 10
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: set version
+        id: set_version
+        run: |
+          version=$(date +'%Y%m%d.%H%M%S')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          printf '{"version": "%s" }' "$version" > src/version.json
+
+      - name: Lint
+        run: npm run lint
+
+      /*
+      - name: Run tests
+        run: npm test
+      */
+
+      - name: Update coverage
+        run: |
+          coverage=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+          color=$(echo "$coverage < 80" | bc | awk '{if ($1) print "red"; else print "green"}')
+          curl -s -X POST "https://pizza-factory.cs329.click/api/badge/${{ secrets.NET_ID }}/jwtpizzaservicecoverage?label=Coverage&value=$coverage%25&color=$color" -H "authorization: bearer ${{ secrets.FACTORY_API_KEY }}"
 
   deploy:
     runs-on: ubuntu-latest
@@ -42,9 +74,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
       - name: Write config file
         run: |
           echo "module.exports = {
@@ -65,18 +94,9 @@ jobs:
             },
           };" > src/config.js
 
-      - name: set version
-        id: set_version
+      - name: Create version file
         run: |
-          version=$(date +'%Y%m%d.%H%M%S')
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          printf '{"version": "%s" }' "$version" > src/version.json
-
-      - name: Update coverage
-        run: |
-          coverage=$(jq '.total.lines.pct' coverage/coverage-summary.json)
-          color=$(echo "$coverage < 80" | bc | awk '{if ($1) print "red"; else print "green"}')
-          curl -s -X POST "https://pizza-factory.cs329.click/api/badge/${{ secrets.NET_ID }}/jwtpizzaservicecoverage?label=Coverage&value=$coverage%25&color=$color" -H "authorization: bearer ${{ secrets.FACTORY_API_KEY }}"
+          printf '{"version": "%s" }' "${{ needs.build.outputs.version }}" > src/version.json
       
       - name: Create dist
         run: |
@@ -106,22 +126,38 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up machine emulation
-         uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up docker build
-         uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push container image
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: 'jwt-pizza-service'
-          IMAGE_TAG: ${{ steps.set_version.outputs.version }}
+          IMAGE_TAG: ${{ needs.build.outputs.version }}
         working-directory: dist
         run: |
+          if [ -z "$ECR_REGISTRY" ]; then
+            echo "ERROR: ECR_REGISTRY is empty. ECR login failed."
+            exit 1
+          fi
+          
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "ERROR: IMAGE_TAG is empty. Version not set."
+            exit 1
+          fi
+          
+          echo "ECR Registry: $ECR_REGISTRY"
+          echo "ECR Repository: $ECR_REPOSITORY"
+          echo "Image Tag: $IMAGE_TAG"
+          echo "Full image name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          
           docker build --platform=linux/arm64 -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT 
 
 
