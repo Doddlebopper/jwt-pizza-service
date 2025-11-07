@@ -181,31 +181,23 @@ jobs:
           echo "Deploying to ECS cluster jwt-pizza-service..."
           aws ecs update-service --cluster jwt-pizza-service --service jwt-pizza-service --force-new-deployment --region us-east-1
           echo "ECS service update initiated successfully"
-      
-      - name: Write config file
-        run: |
-          echo "module.exports = {
-            jwtSecret: '${{ secrets.JWT_SECRET }}',
-            db: {
-              connection: {
-                host: '127.0.0.1',
-                user: 'root',
-                password: 'Nicispoo1!',
-                database: 'pizza',
-                connectTimeout: 60000,
-              },
-              listPerPage: 10,
-            },
-            factory: {
-              url: 'https://pizza-factory.cs329.click',
-              apiKey: '${{ secrets.FACTORY_API_KEY }}',
-            },
-            metrics: {
-              source: 'jwt-pizza-service',
-              url: '${{ secrets.METRICS_URL }}',
-              apiKey: '${{ secrets.METRICS_API_KEY }}',
-            },            
-          };" > src/config.js |
+  release:
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5
+        env:
+          version: ${{needs.build.outputs.version}}
+        with:
+          tag: version-${{ env.version }}
+          name: Version ${{ env.version }}
+          makeLatest: true
+          body: |
+            ## 🚀 Changes
 
+            ${{ github.event.head_commit.message }}
 
-
+            **commit**: ${{ github.sha }}
