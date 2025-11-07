@@ -8,7 +8,11 @@ host=$1
 
 
 response=$(curl -s -X PUT $host/api/auth -d '{"email":"a@jwt.com", "password":"admin"}' -H 'Content-Type: application/json')
-token=$(echo $response | jq -r '.token')
+# Extract token without jq
+token=$(echo $response | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | grep -o '"[^"]*"$' | tr -d '"')
+if [ -z "$token" ] || [ "$token" = "null" ]; then
+  token=$(echo $response | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+fi
 
 # Add users
 curl -X POST $host/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"diner"}' -H 'Content-Type: application/json'
