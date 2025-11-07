@@ -42,7 +42,7 @@ function getSystemMetrics() {
       previousCpuUsage = process.cpuUsage();
       previousCpuTime = currentTime;
     }
-  } catch (error) {
+  } catch {
     // Fallback: return 0 if calculation fails
     cpuUsage = 0;
   }
